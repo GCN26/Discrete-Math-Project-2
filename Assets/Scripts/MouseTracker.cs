@@ -12,6 +12,8 @@ public class MouseTracker : MonoBehaviour
     VerticesScript vert1, vert2;
 
     public LineRenderer line, lineNeutral;
+    public GameObject loop,directionLoop;
+
     LineRenderer currentLine;
 
     public List<LineDirection> lines,linesNeutral;
@@ -22,7 +24,17 @@ public class MouseTracker : MonoBehaviour
         inOutEdge,
     }
 
+    public enum mouseMode
+    {
+        drag,
+        edge
+    }
+
     public EdgeMode edgeMode;
+    public mouseMode mouseContact;
+
+    public TMP_Dropdown edgeDrop, mouseDrop;
+
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -33,7 +45,33 @@ public class MouseTracker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(edgeDrop.value == 0)
+        {
+            edgeMode = EdgeMode.neutralEdge;
+        }
+        else if(edgeDrop.value == 1)
+        {
+            edgeMode = EdgeMode.inOutEdge;
+        }
+
+        if(mouseDrop.value == 0)
+        {
+            mouseContact = mouseMode.drag;
+        }
+        else if (mouseDrop.value == 1)
+        {
+            mouseContact = mouseMode.edge;
+        }
+
         this.transform.position = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 1));
+        if(mouseContact == mouseMode.edge)
+        {
+            this.GetComponent<Collider2D>().enabled = true;
+        }
+        else
+        {
+            this.GetComponent<Collider2D>().enabled = false;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -48,7 +86,7 @@ public class MouseTracker : MonoBehaviour
 
     private void OnTriggerExit2D(Collider2D collision)
     {
-        if (collision.GetComponent<VerticesScript>() == vertex)
+        if (collision.GetComponent<VerticesScript>() == vertex && vertex != null)
         {
             vertex.hover = false;
             vertex = null;
@@ -59,109 +97,137 @@ public class MouseTracker : MonoBehaviour
 
     private void OnMouseDown()
     {
-        if (over)
+        if (mouseContact == mouseMode.edge)
         {
-            switch (edgeMode) {
-                case EdgeMode.inOutEdge:
-                    if (vert1 == null) {
-                        vert1 = vertex;
-                        vert1.selected = true;
-                    }
-                    else if (vert2 == null)
-                    {
-                        vert2 = vertex;
-
-                        if (vert1 != vert2)
+            if (over)
+            {
+                switch (edgeMode)
+                {
+                    case EdgeMode.inOutEdge:
+                        if (vert1 == null)
                         {
-                            for(int i = 0; i < lines.Count; i++)
+                            vert1 = vertex;
+                            vert1.selected = true;
+                        }
+                        else if (vert2 == null)
+                        {
+                            vert2 = vertex;
+
+                            if (vert1 != vert2)
                             {
-                                if (lines[i].vert1 == vert1 && lines[i].vert2 == vert2)
+                                for (int i = 0; i < lines.Count; i++)
                                 {
-                                    currentLine = lines[i].GetComponent<LineRenderer>();
-                                    lines[i].linesBetween += 1;
-                                    break;
+                                    if (lines[i].vert1 == vert1 && lines[i].vert2 == vert2)
+                                    {
+                                        currentLine = lines[i].GetComponent<LineRenderer>();
+                                        lines[i].linesBetween += 1;
+                                        break;
+                                    }
                                 }
-                            }
-                            if(currentLine == null)
-                            {
-                                currentLine = Instantiate(line);
-
-                                currentLine.GetComponent<LineDirection>().vert1 = vert1;
-                                currentLine.GetComponent<LineDirection>().vert2 = vert2;
-
-                                lines.Add(currentLine.GetComponent<LineDirection>());
-                            }
-
-                            //Sets lines to In Position for Vertex 2, and Out Position for Vertex 1
-                            currentLine.SetPosition(0, new Vector3(vert1.outPos.transform.position.x,vert1.outPos.transform.position.y,0));
-                            currentLine.SetPosition(1, new Vector3(vert2.inPos.transform.position.x, vert2.inPos.transform.position.y, 0));
-
-                            vert1.selected = false;
-                            vert1.calcLines(vert2, 1);
-                            vert2.calcLines(vert1, 0);
-
-                            currentLine = null;
-
-                        }
-                        else
-                        {
-                            //add loops
-                        }
-
-                        vert1 = null; vert2 = null;
-                    }
-                    break;
-                case EdgeMode.neutralEdge:
-                    if (vert1 == null)
-                    {
-                        vert1 = vertex;
-                        vert1.selected = true;
-                    }
-                    else if (vert2 == null)
-                    {
-                        vert2 = vertex;
-
-                        if (vert1 != vert2)
-                        {
-                            for (int i = 0; i < linesNeutral.Count; i++)
-                            {
-                                if (linesNeutral[i].vert1 == vert1 && linesNeutral[i].vert2 == vert2)
+                                if (currentLine == null)
                                 {
-                                    currentLine = linesNeutral[i].GetComponent<LineRenderer>();
-                                    linesNeutral[i].linesBetween += 1;
-                                    break;
+                                    currentLine = Instantiate(line);
+
+                                    currentLine.GetComponent<LineDirection>().vert1 = vert1;
+                                    currentLine.GetComponent<LineDirection>().vert2 = vert2;
+
+                                    lines.Add(currentLine.GetComponent<LineDirection>());
                                 }
+
+                                //Sets lines to In Position for Vertex 2, and Out Position for Vertex 1
+
+                                vert1.connectedOutLines.Add(currentLine);
+                                vert2.connectedInLines.Add(currentLine);
+
+                                vert1.selected = false;
+                                vert1.calcLines(vert2, 1);
+                                vert2.calcLines(vert1, 0);
+
+                                currentLine = null;
+
                             }
-                            if (currentLine == null)
+                            else
                             {
-                                currentLine = Instantiate(lineNeutral);
-
-                                currentLine.GetComponent<LineDirection>().vert1 = vert1;
-                                currentLine.GetComponent<LineDirection>().vert2 = vert2;
-
-                                linesNeutral.Add(currentLine.GetComponent<LineDirection>());
+                                //add loops
+                                GameObject loopA = Instantiate(directionLoop);
+                                vert1.selected = false;
+                                loopA.GetComponent<SpriteRenderer>().sortingOrder = -1;
+                                vert1.calcLines(vert1, 0);
+                                vert1.calcLines(vert1, 1);
+                                vert1.dirLoop = loopA;
                             }
 
-                            //Sets lines to Neutral Position in the vertex
-                            currentLine.SetPosition(0, new Vector3(vert1.neutralPos.transform.position.x, vert1.neutralPos.transform.position.y, 0));
-                            currentLine.SetPosition(1, new Vector3(vert2.neutralPos.transform.position.x, vert2.neutralPos.transform.position.y, 0));
-
-                            vert1.selected = false;
-                            vert1.calcLines(vert2, 2);
-                            vert2.calcLines(vert1, 2);
-
-                            currentLine = null;
-
+                            vert1 = null; vert2 = null;
                         }
-                        else
+                        break;
+                    case EdgeMode.neutralEdge:
+                        if (vert1 == null)
                         {
-                            //add loops
+                            vert1 = vertex;
+                            vert1.selected = true;
                         }
+                        else if (vert2 == null)
+                        {
+                            vert2 = vertex;
 
-                        vert1 = null; vert2 = null;
-                    }
-                    break;
+                            if (vert1 != vert2)
+                            {
+                                for (int i = 0; i < linesNeutral.Count; i++)
+                                {
+                                    if (linesNeutral[i].vert1 == vert1 && linesNeutral[i].vert2 == vert2)
+                                    {
+                                        currentLine = linesNeutral[i].GetComponent<LineRenderer>();
+                                        linesNeutral[i].linesBetween += 1;
+                                        break;
+                                    }
+                                }
+                                if (currentLine == null)
+                                {
+                                    currentLine = Instantiate(lineNeutral);
+
+                                    currentLine.GetComponent<LineDirection>().vert1 = vert1;
+                                    currentLine.GetComponent<LineDirection>().vert2 = vert2;
+
+                                    linesNeutral.Add(currentLine.GetComponent<LineDirection>());
+                                }
+
+                                //Sets lines to Neutral Position in the vertex
+                                vert1.connectedNLines.Add(currentLine);
+                                vert1.indexesN.Add(0);
+                                vert2.connectedNLines.Add(currentLine);
+                                vert2.indexesN.Add(1);
+
+                                vert1.selected = false;
+                                vert1.calcLines(vert2, 2);
+                                vert2.calcLines(vert1, 2);
+
+                                currentLine = null;
+
+                            }
+                            else
+                            {
+                                //add loops
+                                GameObject loopA = Instantiate(loop);
+                                vert1.selected = false;
+                                loopA.GetComponent<SpriteRenderer>().sortingOrder = -1;
+                                vert1.calcLines(vert1, 2);
+                                vert1.calcLines(vert1, 2);
+                                vert1.loop = loopA;
+                            }
+
+                            vert1 = null; vert2 = null;
+                        }
+                        break;
+                }
+            }
+            else if(vert1 != null && vert2 == null)
+            {
+                vert1.selected = false;
+                vert1 = null;
             }
         }
+        
     }
+
+    
 }

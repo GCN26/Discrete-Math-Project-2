@@ -5,6 +5,7 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using static MouseTracker;
 
 public class VerticesScript : MonoBehaviour
 {
@@ -19,15 +20,33 @@ public class VerticesScript : MonoBehaviour
     public List<VerticesScript> edgesIn, edgesOut,edgesNeutral;
     public List<int> edgesInCount, edgesOutCount, edgesNeutralCount;
 
+    public List<LineRenderer> connectedNLines,connectedInLines, connectedOutLines;
+    public List<int> indexesN;
+
     public GameObject inPos, outPos, neutralPos;
 
     public VertexManager manager;
     public TextMeshProUGUI number;
 
+    public MouseTracker mouse;
+
+    public GameObject loop, dirLoop;
+
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        for (int i = 0; i < manager.vertexList.Count; i++)
+        if(mouse == null)
+        {
+            mouse = GameObject.Find("Rat").GetComponent<MouseTracker>();
+        }
+        if (manager == null)
+        {
+            manager = GameObject.Find("VertexManager").GetComponent<VertexManager>();
+            manager.vertexList.Add(this);
+            manager.updateLists(this);
+        }
+            for (int i = 0; i < manager.vertexList.Count; i++)
         {
             edgesIn.Add(manager.vertexList[i]);
             edgesOut.Add(manager.vertexList[i]);
@@ -57,6 +76,37 @@ public class VerticesScript : MonoBehaviour
         {
             spriteRenderer.color = Color.white;
         }
+
+        for(int i = 0;i<connectedNLines.Count;i++)
+        {
+            connectedNLines[i].SetPosition(indexesN[i],neutralPos.transform.position);
+        }
+        for (int i = 0; i < connectedInLines.Count; i++)
+        {
+            connectedInLines[i].SetPosition(1, inPos.transform.position);
+        }
+        for (int i = 0; i < connectedOutLines.Count; i++)
+        {
+            connectedOutLines[i].SetPosition(0, outPos.transform.position);
+        }
+        if(loop != null)
+        {
+            loop.transform.position = new Vector3(this.transform.position.x + .5f, this.transform.position.y + .5f, -1);
+        }
+        if (dirLoop != null)
+        {
+            dirLoop.transform.position = new Vector3(this.transform.position.x - .5f, this.transform.position.y + .5f, -1);
+        }
+    }
+
+    public void addVertexToLists(VerticesScript vert1)
+    {
+        edgesIn.Add(vert1);
+        edgesOut.Add(vert1);
+        edgesNeutral.Add(vert1);
+        edgesInCount.Add(0);
+        edgesOutCount.Add(0);
+        edgesNeutralCount.Add(0);
     }
 
     private void OnMouseOver()
@@ -142,5 +192,23 @@ public class VerticesScript : MonoBehaviour
                 break;
         }
     }
+    public void OnMouseDown()
+    {
+        if (mouse.mouseContact == mouseMode.drag)
+        {
+            screenPoint = Camera.main.WorldToScreenPoint(gameObject.transform.position);
 
+            offset = gameObject.transform.position - Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z));
+        }
+    }
+    public void OnMouseDrag()
+    {
+        if (mouse.mouseContact == mouseMode.drag)
+        {
+            Vector3 curScreenPoint = new Vector3(Input.mousePosition.x, Input.mousePosition.y, screenPoint.z);
+
+            Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + offset;
+            transform.position = curPosition;
+        }
+    }
 }
