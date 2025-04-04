@@ -27,13 +27,15 @@ public class MouseTracker : MonoBehaviour
     public enum mouseMode
     {
         drag,
-        edge
+        edge,
+        view
     }
 
     public EdgeMode edgeMode;
     public mouseMode mouseContact;
 
     public TMP_Dropdown edgeDrop, mouseDrop;
+    public TextMeshProUGUI connects;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
@@ -62,15 +64,30 @@ public class MouseTracker : MonoBehaviour
         {
             mouseContact = mouseMode.edge;
         }
+        else if (mouseDrop.value == 2)
+        {
+            mouseContact = mouseMode.view;
+        }
 
         this.transform.position = Camera.main.ScreenToWorldPoint(new Vector3(Input.mousePosition.x, Input.mousePosition.y, 1));
-        if(mouseContact == mouseMode.edge)
+        if(mouseContact == mouseMode.edge || mouseContact == mouseMode.view)
         {
             this.GetComponent<Collider2D>().enabled = true;
         }
         else
         {
             this.GetComponent<Collider2D>().enabled = false;
+        }
+
+        if(vertex != null && mouseContact == mouseMode.view)
+        {
+            string conString;
+            conString = "Vertex #" + vertex.numberOfVert.ToString() + "\nNeutral Connections: " + vertex.getConnections(0) + "\nIn Connections: " + vertex.getConnections(1) + "\nOut Connections: " + vertex.getConnections(2);
+            connects.text = conString;
+        }
+        else
+        {
+            connects.text = "";
         }
     }
 

@@ -32,6 +32,7 @@ public class VerticesScript : MonoBehaviour
 
     public GameObject loop, dirLoop;
 
+    public int numberOfVert;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -56,7 +57,8 @@ public class VerticesScript : MonoBehaviour
             edgesNeutralCount.Add(0);
             if (manager.vertexList[i] == this)
             {
-                number.text = (i+1).ToString();
+                numberOfVert = (i + 1);
+                number.text = numberOfVert.ToString();
             }
         }
     }
@@ -210,5 +212,35 @@ public class VerticesScript : MonoBehaviour
             Vector3 curPosition = Camera.main.ScreenToWorldPoint(curScreenPoint) + offset;
             transform.position = curPosition;
         }
+    }
+
+    public int getConnections(int type)
+    {
+        int total = 0;
+        //Neutral
+        if(type == 0)
+        {
+            for(int i = 0;i<edgesNeutralCount.Count;i++)
+            {
+                total += edgesNeutralCount[i];
+            }
+        }
+        //In
+        else if (type == 1)
+        {
+            for (int i = 0; i < edgesInCount.Count; i++)
+            {
+                total += edgesInCount[i];
+            }
+        }
+        //Out
+        else if (type == 2)
+        {
+            for (int i = 0; i < edgesOutCount.Count; i++)
+            {
+                total += edgesOutCount[i];
+            }
+        }
+        return total;
     }
 }
